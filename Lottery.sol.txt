@@ -1,0 +1,54 @@
+pragma solidity ^0.4.20;
+
+contract Lottery1 {
+    address public owner;
+    uint256 public winning_number;
+    uint256 public money;
+    uint256 public moneyshare;
+    uint256 public ownershare;
+    uint256 public playtime;
+    uint256 public revealtime;
+    uint256 public numwinners;
+    address[] public winners;
+    
+    mapping(address => bytes32) public players;
+    
+    constructor () public payable {
+        owner= msg.sender;
+        ownershare=1 ether;
+        money=0 ether;
+        playtime= 5 minutes;
+        revealtime= playtime + 2 minutes;
+    }
+
+    function play (bytes32 h) external payable {
+       // require(now < now+playtime);
+        require(msg.sender != owner);
+        require(msg.value==2 ether, "You must pay a 2 ether fee");
+        money = money + msg.value;
+        players[msg.sender]=h;
+    }
+
+    function winning (uint256 _winning_number) external{
+        //require(now > now + playtime);
+        require(msg.sender==owner, "You are not the owner");
+        winning_number = _winning_number;
+    }
+
+    function reveal (uint256 r) external {
+        //require(now < now + revealtime);
+        bytes32 h = sha256 (winning_number,r);
+        require(players[msg.sender] == h, "sorry you are not a winner");
+        winners.push(msg.sender); 
+        }
+    
+    function done () external {
+        numwinners= winners.length;
+        moneyshare= (money-ownershare)/numwinners;
+        require(moneyshare>0, "No winners");
+        owner.transfer(ownershare);
+        for(uint i=0;i<numwinners;i++){
+            winners[i].transfer(moneyshare);
+        }
+    }
+}
